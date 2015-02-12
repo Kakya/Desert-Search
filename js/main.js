@@ -14,74 +14,178 @@ window.onload = function() {
     "use strict";
     
 
-var game = new Phaser.Game(800, 1200, Phaser.CANVAS, 'game', { preload: preload, create: create, update: update, render: render });
+
+var game = new Phaser.Game(800, 600, Phaser.AUTO, 'game', { preload: preload, create: create, update: update, render: render });
 
 function preload() {
 
-    game.load.image('backdrop', 'assets/Night_Sky.png');
-    game.load.image('card', 'assets/F-22.PNG');
-	game.load.audio('Musik', ['assets/Air Battle.ogg']);
-	game.load.audio('soundOfFreedom', ['assets/F-14 Tomcat fly by with sonic boom.wav', 'assets/F-14 Tomcat fly by with sonic boom.ogg']);
+    game.load.image('space', 'assets/BB.png');
+    game.load.image('ship', 'assets/planet.png');
+	game.load.image('Holes', 'assets/Dark-Black-Hole.jpg');
+
 }
 
-var card;
+var ship;
 var cursors;
-var music;
-
+var blackHoles;
+var starfield;
+var timer;
+var total = 0;
+var stateText;
+var text;
+var launched = false;
 function create() {
-	game.physics.startSystem(Phaser.Physics.ARCADE);
-    game.world.setBounds(0, 0, 2560, 1600);
-    game.add.sprite(0, 0, 'backdrop');
+  text = game.add.text(game.world.centerX, game.world.centerY, "This is it, huh? End of the universe. You created this. Looks cool, I must admit.\n Ah, you don't like it? You want to save some of those bastards? \n Figures, my planet wasn't good enough? \n Well, there's your chance, keep your favorite planet safe.\n Don't stay up too late thinking about us.", { font: "20px Times New Roman", fill: "#fff", align: "center" });
+  text.anchor.setTo(0.5, 0.5);
 
-    card = game.add.sprite(200, 200, 'card');
+  game.input.onDown.addOnce(removeText, this);
+  function removeText()
+  {
+	launched = true;
+    //  Our world size is 1600 x 1200 pixels
+    game.world.setBounds(0, 0, 800, 600);
+	game.physics.startSystem(Phaser.Physics.P2JS);
+	game.physics.p2.setImpactEvents(true);
+	game.physics.p2.restitution = 0.8;
+    //  Enable P2 and it will use the updated world size
+	timer = game.time.create(false);
+	function updateCounter() {
 
-    game.camera.follow(card);
-	card.anchor.setTo(0.5, 0.5);
+		total++;
 
-    game.physics.enable(card, Phaser.Physics.ARCADE);
+	}
+	timer.loop(100, updateCounter, this);
+	timer.start();
+    starfield = game.add.tileSprite(0, 0, 800, 600, 'space');
+    starfield.fixedToCamera = true;
+	ship = game.add.sprite(50, 50, 'ship');
+    ship.scale.set(1);
+
+
+    //  Create our physics body. The 'true' parameter enables visual debugging.
+
+//  Turn on impact events for the world, without this we get no collision callbacks
+    
+
+    //  Create our collision groups. One for the player, one for the pandas
+    var playerCollisionGroup = game.physics.p2.createCollisionGroup();
+    var blackHolesCollisionGroup = game.physics.p2.createCollisionGroup();
+
+    game.physics.p2.updateBoundsCollisionGroup();
+	game.physics.p2.enable(ship, false);
+	game.camera.follow(ship);
+	blackHoles = game.add.group();
+	blackHoles.enableBody = true;
+    blackHoles.physicsBodyType = Phaser.Physics.P2JS;
+	ship.physicsBodyType = Phaser.Physics.P2JS;
+	ship.enableBody = true;
+	function createBlackHoles()
+	{
+		for (var i = 0; i< 2; i++)
+		{
+			var xplace = game.world.randomX;
+			var yplace = game.world.randomY;
+			if(xplace != ship.x)
+			{
+				if(yplace != ship.y)
+				{
+					var s = blackHoles.create(xplace, yplace, "Holes");
+				}
+				else
+				{
+					var s = blackHoles.create(xplace, yplace+game.rnd.integerInRange(1, 50), "Holes");
+				}
+			}
+			else
+			{
+				if(yplace != ship.y)
+				{
+					var s = blackHoles.create(xplace+game.rnd.integerInRange(1, 50), yplace, "Holes");
+				}
+				else
+				{
+					var s = blackHoles.create(xplace+game.rnd.integerInRange(1, 50), yplace+game.rnd.integerInRange(1, 50), "Holes");
+				}
+			}
+			
+			game.physics.enable(s, Phaser.Physics.ARCADE);
+			s.body.velocity.x = game.rnd.integerInRange(-200, 200);
+			s.body.velocity.y = game.rnd.integerInRange(-200, 200);
+			s.body.setCollisionGroup(blackHolesCollisionGroup);
+			s.body.collides([blackHolesCollisionGroup, playerCollisionGroup]);
+		}
+	}	
+	createBlackHoles();
+	game.time.events.loop(Phaser.Timer.SECOND * 5, createBlackHoles);
+	blackHoles.setAll('body.collideWorldBounds', true);
+	blackHoles.setAll('body.bounce.x', 1);
+	blackHoles.setAll('body.bounce.y', 1);
+	blackHoles.setAll('body.minBounceVelocity', 12);
+	ship.body.setCircle(25);
+	ship.body.setCollisionGroup(playerCollisionGroup);
+	
+    //  The ship will collide with the pandas, and when it strikes one the hitPanda callback will fire, causing it to alpha out a bit
+    //  When pandas collide with each other, nothing happens to them.
+	function EndGame() {
+
+		ship.kill();
+
+		stateText.text="You have failed your people.\n \n The final remnant in the universe has gone away, only black holes remain now. \n Some God you are.";
+		stateText.visible = true;
+		timer.stop();
+     //the "click to restart" handler
+	//game.input.onTap.addOnce(restart,this);
+
+	}
+    ship.body.collides(blackHolesCollisionGroup, EndGame, this);
 
     cursors = game.input.keyboard.createCursorKeys();
-    card.body.maxAngular = 4000;
-
-    card.body.angularDrag = 50;
-	
-    music = game.add.audio('Musik');
-
-    music.play();
-	music = game.add.audio('soundOfFreedom');
-
-    music.play();
-
+	stateText = game.add.text(game.world.centerX,game.world.centerY,' ', { font: '20px Times New Roman', fill: '#fff' });
+    stateText.anchor.setTo(0.5, 0.5);
+    stateText.visible = false;
+	}
 }
+
+
+
 
 function update() {
+	if(launched)
+	{
+		ship.body.setZeroVelocity();
 
-    card.body.velocity.x = 0;
-    card.body.velocity.y = 0;
-    card.body.angularVelocity = 0;
+		if (cursors.left.isDown)
+		{
+			ship.body.moveLeft(200);
+		}
+		else if (cursors.right.isDown)
+		{
+			ship.body.moveRight(200);
+		}
 
-    card.body.angularAcceleration = 0;
+		if (cursors.up.isDown)
+		{
+			ship.body.moveUp(200);
+		}
+		else if (cursors.down.isDown)
+		{
+			ship.body.moveDown(200);
+		}
 
-    if (game.input.keyboard.isDown(Phaser.Keyboard.A))
-    {
-        card.body.angularAcceleration -= 2500;
-    }
-    else if (game.input.keyboard.isDown(Phaser.Keyboard.D))
-    {
-        card.body.angularAcceleration += 2500;
-    }
+		if (!game.camera.atLimit.x)
+		{
+			starfield.tilePosition.x -= ((ship.body.velocity.x) * game.time.physicsElapsed);
+		}
 
-
-    if (game.input.keyboard.isDown(Phaser.Keyboard.W))
-    {
-        game.physics.arcade.velocityFromAngle(card.angle, 300, card.body.velocity);
-    }
-
-    game.world.wrap(card, 0, true);
-
+		if (!game.camera.atLimit.y)
+		{
+			starfield.tilePosition.y -= ((ship.body.velocity.y) * game.time.physicsElapsed);
+		}
+	}
 }
 
-function render() {
 
+function render() {
+	game.debug.text('Days Alive: ' + total, 32, 32);
 }
 };
