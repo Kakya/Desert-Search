@@ -32,8 +32,16 @@ var starfield;
 var timer;
 var total = 0;
 var stateText;
+var text;
+var launched = false;
 function create() {
+  text = game.add.text(game.world.centerX, game.world.centerY, "This is it, huh? End of the universe. You created this. Looks cool, I must admit.\n Ah, you don't like it? You want to save some of those bastards? \n Figures, my planet wasn't good enough? \n Well, there's your chance, keep your favorite planet safe.\n Don't stay up too late thinking about us.", { font: "20px Times New Roman", fill: "#fff", align: "center" });
+  text.anchor.setTo(0.5, 0.5);
 
+  game.input.onDown.addOnce(removeText, this);
+  function removeText()
+  {
+	launched = true;
     //  Our world size is 1600 x 1200 pixels
     game.world.setBounds(0, 0, 800, 600);
 	game.physics.startSystem(Phaser.Physics.P2JS);
@@ -85,18 +93,18 @@ function create() {
 				}
 				else
 				{
-					var s = blackHoles.create(xplace, yplace*2, "Holes");
+					var s = blackHoles.create(xplace, yplace+game.rnd.integerInRange(1, 50), "Holes");
 				}
 			}
 			else
 			{
 				if(yplace != ship.y)
 				{
-					var s = blackHoles.create(xplace*2, yplace, "Holes");
+					var s = blackHoles.create(xplace+game.rnd.integerInRange(1, 50), yplace, "Holes");
 				}
 				else
 				{
-					var s = blackHoles.create(xplace*2, yplace*2, "Holes");
+					var s = blackHoles.create(xplace+game.rnd.integerInRange(1, 50), yplace+game.rnd.integerInRange(1, 50), "Holes");
 				}
 			}
 			
@@ -110,9 +118,9 @@ function create() {
 	createBlackHoles();
 	game.time.events.loop(Phaser.Timer.SECOND * 5, createBlackHoles);
 	blackHoles.setAll('body.collideWorldBounds', true);
-	blackHoles.setAll('body.bounce.x', 200);
-	blackHoles.setAll('body.bounce.y', 200);
-	blackHoles.setAll('body.minBounceVelocity', 0);
+	blackHoles.setAll('body.bounce.x', 1);
+	blackHoles.setAll('body.bounce.y', 1);
+	blackHoles.setAll('body.minBounceVelocity', 12);
 	ship.body.setCircle(25);
 	ship.body.setCollisionGroup(playerCollisionGroup);
 	
@@ -122,7 +130,7 @@ function create() {
 
 		ship.kill();
 
-		stateText.text="You have failed your people.\n \n The final remnant in the universe has gone away, only blackholes remain now. \n Some God you are.";
+		stateText.text="You have failed your people.\n \n The final remnant in the universe has gone away, only black holes remain now. \n Some God you are.";
 		stateText.visible = true;
 		timer.stop();
      //the "click to restart" handler
@@ -135,43 +143,45 @@ function create() {
 	stateText = game.add.text(game.world.centerX,game.world.centerY,' ', { font: '20px Times New Roman', fill: '#fff' });
     stateText.anchor.setTo(0.5, 0.5);
     stateText.visible = false;
-
+	}
 }
 
 
 
 
 function update() {
-   ship.body.setZeroVelocity();
+	if(launched)
+	{
+		ship.body.setZeroVelocity();
 
-    if (cursors.left.isDown)
-    {
-		ship.body.moveLeft(200);
-    }
-    else if (cursors.right.isDown)
-    {
-		ship.body.moveRight(200);
-    }
+		if (cursors.left.isDown)
+		{
+			ship.body.moveLeft(200);
+		}
+		else if (cursors.right.isDown)
+		{
+			ship.body.moveRight(200);
+		}
 
-    if (cursors.up.isDown)
-    {
-    	ship.body.moveUp(200);
-    }
-    else if (cursors.down.isDown)
-    {
-        ship.body.moveDown(200);
-    }
+		if (cursors.up.isDown)
+		{
+			ship.body.moveUp(200);
+		}
+		else if (cursors.down.isDown)
+		{
+			ship.body.moveDown(200);
+		}
 
-    if (!game.camera.atLimit.x)
-    {
-        starfield.tilePosition.x -= ((ship.body.velocity.x) * game.time.physicsElapsed);
-    }
+		if (!game.camera.atLimit.x)
+		{
+			starfield.tilePosition.x -= ((ship.body.velocity.x) * game.time.physicsElapsed);
+		}
 
-    if (!game.camera.atLimit.y)
-    {
-        starfield.tilePosition.y -= ((ship.body.velocity.y) * game.time.physicsElapsed);
-    }
-
+		if (!game.camera.atLimit.y)
+		{
+			starfield.tilePosition.y -= ((ship.body.velocity.y) * game.time.physicsElapsed);
+		}
+	}
 }
 
 
