@@ -19,221 +19,127 @@ var game = new Phaser.Game(800, 600, Phaser.AUTO, 'game', { preload: preload, cr
 
 function preload() {
 
-    game.load.image('Town', 'assets/Crash.png');
-    game.load.image('ship', 'assets/Inf.png');
-	game.load.image('Holes', 'assets/Inf.png');
-	game.load.image('General', 'assets/GeneralMajor.png');
-	game.load.audio('boden',  'assets/Sehnsucht.ogg');
-	game.load.audio('Seemann',  'assets/Seemann.ogg');
+    game.load.image('space', 'assets/BB.png');
+    game.load.image('ship', 'assets/planet.png');
+	game.load.image('Holes', 'assets/Dark-Black-Hole.jpg');
+
 }
 
 var ship;
 var cursors;
 var blackHoles;
 var starfield;
-var general;
 var timer;
 var total = 0;
 var stateText;
 var text;
-var response;
-var secondResponse;
-var erstResp;
-var zweitResp;
-var music;
-var backMusic;
 var launched = false;
-var survMet = false;
-var survHope = false;
-var genMet = false;
 function create() {
-	game.physics.startSystem(Phaser.Physics.ARCADE);
-    game.world.setBounds(0, 0, 2500, 2500);
+  text = game.add.text(game.world.centerX, game.world.centerY, "This is it, huh? End of the universe. You created this. Looks cool, I must admit.\n Ah, you don't like it? You want to save some of those bastards? \n Figures, my planet wasn't good enough? \n Well, there's your chance, keep your favorite planet safe.\n Don't stay up too late thinking about us.", { font: "20px Times New Roman", fill: "#fff", align: "center" });
+  text.anchor.setTo(0.5, 0.5);
+
+  game.input.onDown.addOnce(removeText, this);
+  function removeText()
+  {
+	launched = true;
+    //  Our world size is 1600 x 1200 pixels
+    game.world.setBounds(0, 0, 800, 600);
 	game.physics.startSystem(Phaser.Physics.P2JS);
 	game.physics.p2.setImpactEvents(true);
-	//game.physics.p2.restitution = 0.8;
+	game.physics.p2.restitution = 0.8;
     //  Enable P2 and it will use the updated world size
-    starfield = game.add.tileSprite(0, 0, 2500, 2500, 'Town');
-    //starfield.fixedToCamera = true;
-	ship = game.add.sprite(game.world.centerX, game.world.centerY+200, 'ship');
-	//ship.animations.add('walk');
-    ship.scale.set(0.5);
+	timer = game.time.create(false);
+	function updateCounter() {
+
+		total++;
+
+	}
+	timer.loop(100, updateCounter, this);
+	timer.start();
+    starfield = game.add.tileSprite(0, 0, 800, 600, 'space');
+    starfield.fixedToCamera = true;
+	ship = game.add.sprite(50, 50, 'ship');
+    ship.scale.set(1);
+
+
+    //  Create our physics body. The 'true' parameter enables visual debugging.
+
+//  Turn on impact events for the world, without this we get no collision callbacks
+    
+
     //  Create our collision groups. One for the player, one for the pandas
     var playerCollisionGroup = game.physics.p2.createCollisionGroup();
     var blackHolesCollisionGroup = game.physics.p2.createCollisionGroup();
-	var generalCollisionGroup = game.physics.p2.createCollisionGroup();
-	music = game.add.audio('boden');
-	backMusic = game.add.audio('Seemann',1, true);
-    music.play();
-	backMusic.volume =0.1; 
-	backMusic.play('', 1, true);
-	erstResp = game.input.keyboard.addKey(Phaser.Keyboard.W);
-	zweitResp = game.input.keyboard.addKey(Phaser.Keyboard.E);
+
     game.physics.p2.updateBoundsCollisionGroup();
 	game.physics.p2.enable(ship, false);
 	game.camera.follow(ship);
 	blackHoles = game.add.group();
 	blackHoles.enableBody = true;
     blackHoles.physicsBodyType = Phaser.Physics.P2JS;
-	general = game.add.group();
-	general.enableBody = true;
-    general.physicsBodyType = Phaser.Physics.P2JS;
 	ship.physicsBodyType = Phaser.Physics.P2JS;
-	ship.enableBody = true;	
-	ship.body.setCollisionGroup(playerCollisionGroup);
-	game.physics.enable(ship, Phaser.Physics.ARCADE);
-	text = game.add.text(game.world.centerX, game.world.centerY, "What happened? Where am I? \n Did a SAM hit us? I have to find Jack.", { font: "35px Times New Roman", fill: "#000", align: "center" });
-	text.anchor.setTo(0.5, 0.5);
-  	game.input.onDown.addOnce(removeText, this);
-	function removeText()
+	ship.enableBody = true;
+	function createBlackHoles()
 	{
-		launched = true;
-		text.visible = false;
-		function createSurvivors()
-		{
-			for (var i = 0; i< 5; i++)
-			{
-				var xplace = game.world.randomX;
-				var yplace = game.world.randomY;
-				if(xplace == ship.x)
-				{
-					if(yplace == ship.y)
-					{
-						var s = blackHoles.create(xplace+game.rnd.integerInRange(1, 50), yplace+game.rnd.integerInRange(1, 50), "Holes");
-					}
-					else
-					{
-						var s = blackHoles.create(xplace, yplace, "Holes");
-					}
-				}
-				else
-				{
-					var s = blackHoles.create(xplace, yplace, "Holes");
-				}
-				game.physics.enable(s, Phaser.Physics.ARCADE);
-				s.body.setRectangle(100, 100, 0, 0);
-				s.body.velocity = 0;
-				s.body.mass = 200000;
-				s.body.immovable = true;
-				s.body.setCollisionGroup(blackHolesCollisionGroup);
-				s.body.collides([generalCollisionGroup, blackHolesCollisionGroup, playerCollisionGroup]);
-			}
-		}
-		createSurvivors();
-		function createGeneral()
+		for (var i = 0; i< 2; i++)
 		{
 			var xplace = game.world.randomX;
 			var yplace = game.world.randomY;
-			if(xplace == ship.x)
+			if(xplace != ship.x)
 			{
-				if(yplace == ship.y)
+				if(yplace != ship.y)
 				{
-					var g = general.create(xplace+game.rnd.integerInRange(1, 50), yplace+game.rnd.integerInRange(1, 50), "General");
+					var s = blackHoles.create(xplace, yplace, "Holes");
 				}
 				else
 				{
-					var g = general.create(xplace, yplace, "General");
+					var s = blackHoles.create(xplace, yplace+game.rnd.integerInRange(1, 50), "Holes");
 				}
+			}
+			else
+			{
+				if(yplace != ship.y)
+				{
+					var s = blackHoles.create(xplace+game.rnd.integerInRange(1, 50), yplace, "Holes");
 				}
 				else
 				{
-					var g = general.create(xplace, yplace, "General");
+					var s = blackHoles.create(xplace+game.rnd.integerInRange(1, 50), yplace+game.rnd.integerInRange(1, 50), "Holes");
 				}
-				game.physics.enable(g, Phaser.Physics.ARCADE);
-				g.body.setRectangle(100, 100, 0, 0);
-				g.body.velocity = 0;
-				g.body.mass = 200000;
-				g.body.setCollisionGroup(generalCollisionGroup);
-				g.body.collides([generalCollisionGroup, blackHolesCollisionGroup, playerCollisionGroup]);
+			}
+			
+			game.physics.enable(s, Phaser.Physics.ARCADE);
+			s.body.velocity.x = game.rnd.integerInRange(-200, 200);
+			s.body.velocity.y = game.rnd.integerInRange(-200, 200);
+			s.body.setCollisionGroup(blackHolesCollisionGroup);
+			s.body.collides([blackHolesCollisionGroup, playerCollisionGroup]);
 		}
-		createGeneral();
-		function encounter()
-		{
-			if (!survMet&&(stateText.visible == false||stateText == null))
-			{
-				stateText = game.add.text(ship.x+50,ship.y+50,' Hello there, have you seen any of the others?', { font: '20px Times New Roman', fill: '#000' });
-				stateText.anchor.setTo(0.5, 0.5);
-				stateText.visible = true;
-				survMet = true;
-				game.input.onDown.addOnce(removeGreeting, this);
-			}
-			else
-			{
-				if(stateText.visible == false)
-				{
-					stateText = game.add.text(ship.x+50,ship.y+50,' I don\'t want to be so lost', { font: '20px Times New Roman', fill: '#000' });
-					stateText.anchor.setTo(0.5, 0.5);
-					stateText.visible = true;
-					survHope= true;
-					game.input.onDown.addOnce(removeGreeting, this);
-				}
-			}
-		}
-		function derGeneral(resp)
-		{
-			if(!genMet)
-			{
-				stateText = game.add.text(ship.x+50,ship.y+50,'Soldier, what are you doing there?', { font: '20px Times New Roman', fill: '#000' });
-				stateText.anchor.setTo(0.5, 0.5);
-				stateText.visible = true;
-				genMet = true;
-				game.input.onDown.addOnce(GeneralMeet, this);
-			}
-			else
-			{
-				if(resp == 1)
-				{
-					response.visible = false;
-					SecondResponse.visible = false;
-					stateText = game.add.text(ship.x+50,ship.y+50,'Damn right you\'re a soldier. Who\'s this Jack you\'re on about?', { font: '20px Times New Roman', fill: '#000' });
-					stateText.anchor.setTo(0.5, 0.5);
-					stateText.visible = true;
-					game.input.onDown.addOnce(removeGreeting, this);
-				}
-				else if(resp == 2)
-				{
-					response.visible = false;
-					SecondResponse.visible = false;
-					stateText = game.add.text(ship.x+50,ship.y+50,'I will not suffer insubordination soldier!', { font: '20px Times New Roman', fill: '#000' });
-					stateText.anchor.setTo(0.5, 0.5);
-					stateText.visible = true;
-					game.input.onDown.addOnce(removeGreeting, this);
-				}
-			}
-		}
-	ship.body.collides(blackHolesCollisionGroup, encounter, this);
-	ship.body.collides(generalCollisionGroup, derGeneral, this);
+	}	
+	createBlackHoles();
+	game.time.events.loop(Phaser.Timer.SECOND * 5, createBlackHoles);
+	blackHoles.setAll('body.collideWorldBounds', true);
+	blackHoles.setAll('body.bounce.x', 1);
+	blackHoles.setAll('body.bounce.y', 1);
+	blackHoles.setAll('body.minBounceVelocity', 12);
+	ship.body.setCircle(25);
+	ship.body.setCollisionGroup(playerCollisionGroup);
+	
+    //  The ship will collide with the pandas, and when it strikes one the hitPanda callback will fire, causing it to alpha out a bit
+    //  When pandas collide with each other, nothing happens to them.
+	function EndGame() {
+
+		ship.kill();
+
+		stateText.text="You have failed your people.\n \n The final remnant in the universe has gone away, only black holes remain now. \n Some God you are.";
+		stateText.visible = true;
+		timer.stop();
+     //the "click to restart" handler
+	//game.input.onTap.addOnce(restart,this);
+
+	}
+    ship.body.collides(blackHolesCollisionGroup, EndGame, this);
+
     cursors = game.input.keyboard.createCursorKeys();
-	function removeGreeting()
-	{
-		stateText.visible = false;
-	}
-	function removeResponse()
-	{
-		response.visible = false;
-	}
-	function GeneralMeet()
-	{
-		stateText.visible = false;
-		response = game.add.text(ship.x+50,ship.y+50,'W. I...yes...I\'m a soldier. Do you know where Jack is?', { font: '20px Times New Roman', fill: '#000' });
-		response.anchor.setTo(0.5, 0.5);
-		response.visible = true;
-		secondResponse = game.add.text(ship.x+50,ship.y+100,'E. Do not command me! I need to find Jack!', { font: '20px Times New Roman', fill: '#000' });
-		response.anchor.setTo(0.5, 0.5);
-		response.visible = true;
-		secondResponse.visible = true;
-		erstResp.onDown.add(respEins, this);
-		function respEins()
-		{
-			derGeneral(1);
-		}
-		zweitResp.onDown.add(respZwei, this);
-		function respZwei()
-		{
-			derGeneral(2);
-		}
-	}
-	game.input.onDown.addOnce(removeGreeting, this);
 	stateText = game.add.text(game.world.centerX,game.world.centerY,' ', { font: '20px Times New Roman', fill: '#fff' });
     stateText.anchor.setTo(0.5, 0.5);
     stateText.visible = false;
@@ -247,29 +153,39 @@ function update() {
 	if(launched)
 	{
 		ship.body.setZeroVelocity();
+
 		if (cursors.left.isDown)
 		{
-			ship.body.rotateLeft(50);
+			ship.body.moveLeft(200);
 		}
 		else if (cursors.right.isDown)
 		{
-			ship.body.rotateRight(50);
+			ship.body.moveRight(200);
 		}
-		else {ship.body.setZeroRotation();}
+
 		if (cursors.up.isDown)
 		{
-			ship.body.thrust(8000);
+			ship.body.moveUp(200);
 		}
 		else if (cursors.down.isDown)
 		{
-			ship.body.thrust(-4000);
+			ship.body.moveDown(200);
+		}
+
+		if (!game.camera.atLimit.x)
+		{
+			starfield.tilePosition.x -= ((ship.body.velocity.x) * game.time.physicsElapsed);
+		}
+
+		if (!game.camera.atLimit.y)
+		{
+			starfield.tilePosition.y -= ((ship.body.velocity.y) * game.time.physicsElapsed);
 		}
 	}
 }
 
 
 function render() {
-	//game.debug.text('Days Alive: ' + total, 32, 32);
-	 //game.debug.body(s);
+	game.debug.text('Days Alive: ' + total, 32, 32);
 }
 };
