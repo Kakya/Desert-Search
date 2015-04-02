@@ -19,18 +19,22 @@ var game = new Phaser.Game(800, 600, Phaser.AUTO, 'game', { preload: preload, cr
 
 function preload() {
 
-    game.load.image('Town', 'assets/Crash.png');
+  game.load.tilemap('desert', 'assets/level.json', null, Phaser.Tilemap.TILED_JSON);
+  game.load.image('tiles', 'assets/desert_1.png');
     game.load.image('ship', 'assets/Inf.png');
 	game.load.image('Holes', 'assets/Inf.png');
 	game.load.image('General', 'assets/GeneralMajor.png');
 	game.load.audio('boden',  'assets/Sehnsucht.ogg');
-	game.load.audio('Seemann',  'assets/Seemann.ogg');
 }
 
 var ship;
 var cursors;
 var blackHoles;
 var starfield;
+var botLayer;
+var midLayer;
+var topLayer;
+var colLayer;
 var general;
 var timer;
 var total = 0;
@@ -41,7 +45,6 @@ var secondResponse;
 var erstResp;
 var zweitResp;
 var music;
-var backMusic;
 var launched = false;
 var survMet = false;
 var survHope = false;
@@ -53,20 +56,26 @@ function create() {
 	game.physics.p2.setImpactEvents(true);
 	//game.physics.p2.restitution = 0.8;
     //  Enable P2 and it will use the updated world size
-    starfield = game.add.tileSprite(0, 0, 2500, 2500, 'Town');
-    //starfield.fixedToCamera = true;
+    starfield = game.add.tilemap('desert');
+    starfield.addTilesetImage('desert_1', 'tiles');
+	botLayer = map.createLayer('Tile Layer 1');
+	botLayer.resizeWorld();
+	midLayer = map.createLayer('Tile Layer 2');
+	midLayer.resizeWorld();
+	topLayer = map.createLayer('Tile Layer 3');
+	topLayer.resizeWorld();
+	colLayer = map.createLayer('Coll');
+	map.setCollison([
 	ship = game.add.sprite(game.world.centerX, game.world.centerY+200, 'ship');
 	//ship.animations.add('walk');
     ship.scale.set(0.5);
+	game.physics.collide(ship, colLayer);
     //  Create our collision groups. One for the player, one for the pandas
     var playerCollisionGroup = game.physics.p2.createCollisionGroup();
     var blackHolesCollisionGroup = game.physics.p2.createCollisionGroup();
 	var generalCollisionGroup = game.physics.p2.createCollisionGroup();
 	music = game.add.audio('boden');
-	backMusic = game.add.audio('Seemann',1, true);
-    music.play();
-	backMusic.volume =0.1; 
-	backMusic.play('', 1, true);
+    //music.play();
 	erstResp = game.input.keyboard.addKey(Phaser.Keyboard.W);
 	zweitResp = game.input.keyboard.addKey(Phaser.Keyboard.E);
     game.physics.p2.updateBoundsCollisionGroup();
